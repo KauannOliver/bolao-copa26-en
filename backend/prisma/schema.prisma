@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PENDING
+  BETTOR
+  ADMIN
+}
+
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  name                String
+  email               String               @unique
+  password_hash       String
+  role                Role                 @default(PENDING)
+  status              Status               @default(PENDING)
+  created_at          DateTime             @default(now())
+  updated_at          DateTime             @updatedAt
+  approved_at         DateTime?
+  approved_by         String?
+  GroupPrediction     GroupPrediction[]
+  KnockoutPrediction  KnockoutPrediction[]
+  ScoreDetail         ScoreDetail[]
+  AuditLog            AuditLog[]
+}
+
+model PoolSetting {
+  id                         String   @id @default(uuid())
+  group_stage_deadline       DateTime
+  group_stage_results_locked Boolean  @default(false)
+  knockout_generated         Boolean  @default(false)
+  r32_deadline               DateTime?
+  r32_visible                Boolean  @default(false)
+  r16_deadline               DateTime?
+  r16_visible                Boolean  @default(false)
+  qf_deadline                DateTime?
+  qf_visible                 Boolean  @default(false)
+  sf_deadline                DateTime?
+  sf_visible                 Boolean  @default(false)
+  third_deadline             DateTime?
+  third_visible              Boolean  @default(false)
+  final_deadline             DateTime?
+  final_visible              Boolean  @default(false)
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @updatedAt
+}
+
+model Group {
+  id                  String                @id @default(uuid())
+  name                String
+  letter              String                @unique
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  Team                Team[]
+  GroupPrediction     GroupPrediction[]
+  OfficialGroupResult OfficialGroupResult[]
+  ScoreDetail         ScoreDetail[]
+}
+
+model Team {
+  id                  String                @id @default(uuid())
+  name                String
+  short_name          String
+  code                String                @unique
+  group_id            String
+  draw_position       String?
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  Group               Group                 @relation(fields: [group_id], references: [id])
+  GroupPrediction     GroupPrediction[]
+  OfficialGroupResult OfficialGroupResult[]
+  MatchesAsTeamA      Match[]               @relation("TeamA")
+  MatchesAsTeamB      Match[]               @relation("TeamB")
+  MatchesWon          Match[]               @relation("Winner")
+  MatchesLost         Match[]               @relation("Loser")
+  KnockoutPredictions KnockoutPrediction[]
+  ScoreDetail         ScoreDetail[]
+}
+
+model GroupPrediction {
+  id                 String   @id @default(uuid())
+  user_id            String
+  group_id           String
+  team_id            String
+  predicted_position Int
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  User               User     @relation(fields: [user_id], references: [id])
+  Group              Group    @relation(fields: [group_id], references: [id])
+  Team               Team     @relation(fields: [team_id], references: [id])
+
+  @@unique([user_id, group_id, team_id])
+  @@unique([user_id, group_id, predicted_position])
+}
+
+model OfficialGroupResult {
+  id                       String   @id @default(uuid())
+  group_id                 String
+  team_id                  String
+  official_position        Int
+  points_optional          Int?
+  goals_for_optional       Int?
+  goals_against_optional   Int?
+  goal_difference_optional Int?
+  is_third_place_qualified Boolean  @default(false)
+  third_place_rank_optional Int?
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+  Group                    Group    @relation(fields: [group_id], references: [id])
+  Team                     Team     @relation(fields: [team_id], references: [id])
+
+  @@unique([group_id, team_id])
+  @@unique([group_id, official_position])
+}
+
+enum MatchStage {
+  ROUND_OF_32
+  ROUND_OF_16
+  QUARTER_FINAL
+  SEMI_FINAL
+  THIRD_PLACE
+  FINAL
+}
+
+enum MatchStatus {
+  WAITING_TEAMS
+  SCHEDULED
+  OPEN_FOR_BETS
+  LOCKED
+  FINISHED
+}
+
+model Match {
+  id                 String               @id @default(uuid())
+  fifa_match_number  Int                  @unique
+  stage              MatchStage
+  team_a_id          String?
+  team_b_id          String?
+  source_a_type      String?
+  source_a_ref       String?
+  source_b_type      String?
+  source_b_ref       String?
+  match_datetime     DateTime?
+  is_betting_open    Boolean              @default(false)
+  status             MatchStatus          @default(WAITING_TEAMS)
+  goals_team_a       Int?
+  goals_team_b       Int?
+  winner_team_id     String?
+  loser_team_id      String?
+  had_penalties      Boolean              @default(false)
+  penalties_team_a   Int?
+  penalties_team_b   Int?
+  next_match_id      String?
+  next_match_slot    String?
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @updatedAt
+  TeamA              Team?                @relation("TeamA", fields: [team_a_id], references: [id])
+  TeamB              Team?                @relation("TeamB", fields: [team_b_id], references: [id])
+  WinnerTeam         Team?                @relation("Winner", fields: [winner_team_id], references: [id])
+  LoserTeam          Team?                @relation("Loser", fields: [loser_team_id], references: [id])
+  KnockoutPrediction KnockoutPrediction[]
+  ScoreDetail        ScoreDetail[]
+}
+
+model KnockoutPrediction {
+  id                       String   @id @default(uuid())
+  user_id                  String
+  match_id                 String
+  predicted_goals_team_a   Int
+  predicted_goals_team_b   Int
+  predicted_winner_team_id String?
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+  User                     User     @relation(fields: [user_id], references: [id])
+  Match                    Match    @relation(fields: [match_id], references: [id])
+  WinnerTeam               Team?    @relation(fields: [predicted_winner_team_id], references: [id])
+
+  @@unique([user_id, match_id])
+}
+
+model ScoreDetail {
+  id                 String   @id @default(uuid())
+  user_id            String
+  stage              String // 'GROUP_STAGE' | 'KNOCKOUT'
+  group_id           String?
+  match_id           String?
+  team_id            String?
+  predicted_position Int?
+  official_position  Int?
+  predicted_score    String?
+  official_score     String?
+  points             Int
+  reason             String
+  created_at         DateTime @default(now())
+  User               User     @relation(fields: [user_id], references: [id])
+  Group              Group?   @relation(fields: [group_id], references: [id])
+  Match              Match?   @relation(fields: [match_id], references: [id])
+  Team               Team?    @relation(fields: [team_id], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  user_id    String?
+  action     String
+  entity     String
+  entity_id  String?
+  old_value  String?
+  new_value  String?
+  created_at DateTime @default(now())
+  User       User?    @relation(fields: [user_id], references: [id])
+}
+
+model ThirdPlaceMappingOption {
+  id              String @id @default(uuid())
+  combination_key String @unique // e.g. "A-B-C-D"
+  m74_group       String
+  m77_group       String
+  m79_group       String
+  m80_group       String
+  m81_group       String
+  m82_group       String
+  m85_group       String
+  m87_group       String
+}
