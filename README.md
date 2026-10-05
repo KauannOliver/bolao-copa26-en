@@ -2,6 +2,7 @@
 
 # World Cup Prediction League
 
+> Public source edition. Configure credentials locally and use empty or synthetic inputs. Company and institution names identify the original integration context; this repository does not claim affiliation or endorsement.
 An end-to-end prediction game for group standings, knockout matches, and a shared leaderboard.
 
 **React · NestJS · PostgreSQL · Prisma**
@@ -44,7 +45,6 @@ In `backend/`, run `npm install`, `npx prisma generate`, `npx prisma migrate dev
 
 The first administrator is created only when no administrator exists. Set `FIRST_ADMIN_EMAIL` and `FIRST_ADMIN_PASSWORD` (at least 16 characters) before the initial seed. Generate a JWT secret with `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`. Never commit a populated `.env` file.
 
-> This repository was previously public with a default administrator credential in its history. Treat that credential as compromised. Any deployment that may have used it needs an administrator password reset and a new `JWT_SECRET`. Making the repository private does not revoke sessions or remove existing public copies.
 
 ## Tests
 
