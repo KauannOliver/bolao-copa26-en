@@ -17,15 +17,24 @@ async function main() {
     console.log('Configurações iniciais criadas.');
   }
 
-  // Primeiro Admin
-  const adminEmail = process.env.FIRST_ADMIN_EMAIL || 'admin@tic.com';
-  const adminPasswordRaw = process.env.FIRST_ADMIN_PASSWORD || 'Admin@Tic26';
-  
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
-  });
+  // Create the first administrator only when one does not already exist.
+  const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+  if (adminCount === 0) {
+    const adminEmail = process.env.FIRST_ADMIN_EMAIL?.trim();
+    const adminPasswordRaw = process.env.FIRST_ADMIN_PASSWORD;
+    if (!adminEmail || !adminPasswordRaw || adminPasswordRaw.length < 16) {
+      throw new Error(
+        'Set FIRST_ADMIN_EMAIL and a FIRST_ADMIN_PASSWORD with at least 16 characters before seeding the first administrator.',
+      );
+    }
 
-  if (!existingAdmin) {
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+    if (existingAdmin) {
+      throw new Error('FIRST_ADMIN_EMAIL is already registered without an administrator role.');
+    }
+
     const password_hash = await bcrypt.hash(adminPasswordRaw, 10);
     await prisma.user.create({
       data: {
@@ -37,6 +46,8 @@ async function main() {
       },
     });
     console.log(`Admin criado: ${adminEmail}`);
+  } else {
+    console.log('Administrator already exists; skipping initial administrator creation.');
   }
 
   // Grupos e Seleções

@@ -5,13 +5,14 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
+import { getJwtSecret } from './jwt-secret';
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secretKey',
+      secret: getJwtSecret(),
       signOptions: { expiresIn: '7d' },
     }),
   ],

@@ -1,55 +1,60 @@
-# Bolão - Copa do Mundo 2026
+<div align="center">
 
-Sistema completo de Bolão para a Copa do Mundo de 2026, com divisão em duas etapas: Fase de Grupos e Mata-Mata.
-Desenvolvido com a stack React, Vite, Tailwind CSS, NestJS e Prisma (PostgreSQL).
+# World Cup Prediction League
 
-## Funcionalidades
-- Autenticação de Usuários com aprovação pendente.
-- Painel Administrativo para aprovação de cadastros.
-- Fase de Grupos: Palpites na classificação (1º a 3º lugar) de cada grupo. Validação automática.
-- Mata-Mata: Árvore do torneio, com geração a partir dos resultados da Fase de Grupos. Palpites em placares, com identificação de vencedor em caso de empate (pênaltis).
-- Sistema de pontuação: Cálculos automáticos e geração de Ranking Geral.
+An end-to-end prediction game for group standings, knockout matches, and a shared leaderboard.
 
-## Pré-requisitos
-- Node.js
-- Docker e Docker Compose (para banco de dados PostgreSQL local)
+**React · NestJS · PostgreSQL · Prisma**
 
-## Como Executar
+</div>
 
-### 1. Iniciar Banco de Dados
-Acesse a pasta `backend/` e inicie o banco de dados via Docker:
-```bash
-cd backend
-docker-compose up -d
+## Overview
+
+Participants submit tournament predictions while administrators approve accounts and manage the competition. A React client communicates with a NestJS API backed by PostgreSQL.
+
+## Highlights
+
+- Account registration with approval and role-based access.
+- Group-stage and knockout-stage predictions.
+- Scoring and leaderboard endpoints.
+- Prisma schema, migrations, and tournament seed data.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  User[Participant or admin] --> Web[React and Vite frontend]
+  Web --> API[NestJS REST API]
+  API --> Auth[JWT authentication]
+  API --> DB[(PostgreSQL via Prisma)]
 ```
 
-### 2. Configurar e Executar o Backend
-Na pasta `backend/`:
-1. Instale as dependências: `npm install`
-2. Gere o Prisma Client, rode as migrations e o Seed inicial:
-```bash
-npx prisma migrate dev --name init
-npx prisma db seed
-```
-*(Isso vai criar o banco e inserir todos os grupos, as 48 seleções e o Administrador principal)*
-3. Inicie o servidor Backend:
-```bash
-npm run start:dev
-```
-*(O servidor estará em http://localhost:3000)*
+## Tech stack
 
-### 3. Configurar e Executar o Frontend
-Na pasta `frontend/`:
-1. Instale as dependências: `npm install`
-2. Inicie o servidor Frontend:
-```bash
-npm run dev
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Axios.
+- **Backend:** NestJS, TypeScript, Passport JWT.
+- **Data:** PostgreSQL and Prisma.
+- **Deployment configuration:** Render API manifest and Vercel frontend configuration.
+
+## Run locally
+
+Requires Node.js and Docker Compose. Copy `backend/.env.example` to `backend/.env`, replace every placeholder, then run PostgreSQL from `backend/` with `docker compose up -d`.
+
+In `backend/`, run `npm install`, `npx prisma generate`, `npx prisma migrate dev`, `npx prisma db seed`, and `npm run start:dev`. In `frontend/`, run `npm install` and `npm run dev`. The API defaults to port `3000`; the frontend defaults to `http://localhost:3000` for API requests and port `5173` for Vite.
+
+The first administrator is created only when no administrator exists. Set `FIRST_ADMIN_EMAIL` and `FIRST_ADMIN_PASSWORD` (at least 16 characters) before the initial seed. Generate a JWT secret with `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`. Never commit a populated `.env` file.
+
+> This repository was previously public with a default administrator credential in its history. Treat that credential as compromised. Any deployment that may have used it needs an administrator password reset and a new `JWT_SECRET`. Making the repository private does not revoke sessions or remove existing public copies.
+
+## Tests
+
+From `backend/`, `npm test` runs unit tests and `npm run test:e2e` runs the end-to-end suite.
+
+## Project layout
+
+```text
+backend/   NestJS API, Prisma schema, migrations, seed
+frontend/  React client and Vite configuration
 ```
-*(O app estará em http://localhost:5173)*
 
-## Conta de Administrador
-O Seed já cria a seguinte conta admin:
-- **E-mail:** admin@tic.com
-- **Senha:** Admin@Tic26
-
-Aproveite o sistema!
+No license is defined in this repository.
